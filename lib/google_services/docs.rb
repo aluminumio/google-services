@@ -1,0 +1,179 @@
+require 'google/apis/docs_v1'
+require 'google/apis/drive_v3'
+
+module GoogleServices
+  class Docs < Base
+    API_SCOPES = [
+      'https://www.googleapis.com/auth/documents',
+      'https://www.googleapis.com/auth/drive'
+    ].freeze
+
+    def initialize(credentials)
+      super(credentials)
+      @docs_service = Google::Apis::DocsV1::DocsService.new
+      @drive_service = Google::Apis::DriveV3::DriveService.new
+    end
+
+    def create(title, content: nil, folder: nil)
+      with_error_handling do
+        authorize_services(@docs_service, @drive_service, scopes: API_SCOPES)
+        
+        # Create the document
+        document = Google::Apis::DocsV1::Document.new(title: title)
+        doc = @docs_service.create_document(document)
+        
+        # Add content if provided
+        if content
+          requests = build_content_requests(content)
+          @docs_service.batch_update_document(doc.document_id, 
+            Google::Apis::DocsV1::BatchUpdateDocumentRequest.new(requests: requests)) if requests.any?
+        end
+        
+        # Move to folder if specified
+        if folder
+          folder_id = find_or_create_folder(folder)
+          move_to_folder(doc.document_id, folder_id) if folder_id
+        end
+        
+        # Get the document URL and metadata
+        file = @drive_service.get_file(doc.document_id, fields: 'webViewLink,createdTime,modifiedTime')
+        
+        Document.new(
+          id: doc.document_id,
+          title: doc.title,
+          url: file.web_view_link,
+          created_at: file.created_time,
+          modified_at: file.modified_time
+        )
+      end
+    end
+
+    def find(document_id)
+      with_error_handling do
+        authorize_services(@docs_service, @drive_service, scopes: API_SCOPES)
+        
+        doc = @docs_service.get_document(document_id)
+        file = @drive_service.get_file(document_id, fields: 'webViewLink,createdTime,modifiedTime')
+        
+        Document.new(
+          id: doc.document_id,
+          title: doc.title,
+          url: file.web_view_link,
+          created_at: file.created_time,
+          modified_at: file.modified_time
+        )
+      end
+    end
+
+    def update(document_id, content)
+      with_error_handling do
+        authorize_services(@docs_service, @drive_service, scopes: API_SCOPES)
+        
+        requests = build_content_requests(content)
+        
+        # Clear existing content first
+        clear_requests = [{
+          delete_content_range: {
+            range: {
+              start_index: 1,
+              end_index: get_document_end_index(document_id)
+            }
+          }
+        }]
+        
+        # Execute clear and then insert new content
+        @docs_service.batch_update_document(document_id, 
+          Google::Apis::DocsV1::BatchUpdateDocumentRequest.new(requests: clear_requests))
+        
+        @docs_service.batch_update_document(document_id, 
+          Google::Apis::DocsV1::BatchUpdateDocumentRequest.new(requests: requests))
+        
+        find(document_id)
+      end
+    end
+
+    def list(folder: nil, limit: 100)
+      with_error_handling do
+        authorize_services(@docs_service, @drive_service, scopes: API_SCOPES)
+        
+        query_parts = ["mimeType='application/vnd.google-apps.document'", "trashed=false"]
+        
+        if folder
+          folder_id = find_folder(folder)
+          query_parts << "'#{folder_id}' in parents" if folder_id
+        end
+        
+        response = @drive_service.list_files(
+          q: query_parts.join(' and '),
+          fields: 'files(id,name,webViewLink,createdTime,modifiedTime)',
+          page_size: limit
+        )
+        
+        response.files.map do |file|
+          Document.new(
+            id: file.id,
+            title: file.name,
+            url: file.web_view_link,
+            created_at: file.created_time,
+            modified_at: file.modified_time
+          )
+        end
+      end
+    end
+
+    def delete(document_id)
+      with_error_handling do
+        authorize_services(@docs_service, @drive_service, scopes: API_SCOPES)
+        @drive_service.delete_file(document_id)
+        true
+      end
+    end
+
+    private
+
+    def build_content_requests(content)
+      [{
+        insert_text: {
+          location: { index: 1 },
+          text: content
+        }
+      }]
+    end
+
+    def find_or_create_folder(folder_name)
+      existing_id = find_folder(folder_name)
+      return existing_id if existing_id
+      
+      # Create new folder
+      folder = Google::Apis::DriveV3::File.new(
+        name: folder_name,
+        mime_type: 'application/vnd.google-apps.folder'
+      )
+      created_folder = @drive_service.create_file(folder, fields: 'id')
+      created_folder.id
+    end
+
+    def find_folder(folder_name)
+      query = "name='#{folder_name}' and mimeType='application/vnd.google-apps.folder' and trashed=false"
+      response = @drive_service.list_files(q: query, fields: 'files(id)', page_size: 1)
+      response.files.first&.id
+    end
+
+    def move_to_folder(file_id, folder_id)
+      # Get current parents
+      file = @drive_service.get_file(file_id, fields: 'parents')
+      previous_parents = file.parents&.join(',') || ''
+      
+      # Move to new folder
+      @drive_service.update_file(file_id, 
+        add_parents: folder_id,
+        remove_parents: previous_parents,
+        fields: 'id, parents')
+    end
+
+    def get_document_end_index(document_id)
+      doc = @docs_service.get_document(document_id)
+      doc.body.content.last.end_index || 1
+    end
+  end
+end 

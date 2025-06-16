@@ -1,0 +1,7 @@
+#!/usr/bin/env ruby
+
+require 'bundler/setup'
+require 'google_services'
+require 'google_services/cli'
+
+GoogleServices::CLI.start(ARGV) 
