@@ -30,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OAuth callback path changed to `/users/auth/google_oauth2/callback`
 - CLI now requires real authentication (no more mock tokens)
 - Improved error messages and UTF-8 support in OAuth success page
-- **BREAKING**: Minimum Ruby version increased from 3.0 to 3.1 (required by Bundler 2.6.9)
+- **BREAKING**: Minimum Ruby version increased from 3.0 to 3.2 (required by zeitwerk dependency)
 
 ### Fixed
 - Character encoding issues in OAuth callback HTML responses
