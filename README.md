@@ -1,6 +1,6 @@
 # GoogleServices
 
-Simple Ruby interface for Google Calendar, Docs, and Meet APIs.
+Simple Ruby interface for Google Calendar, Docs, and Meet APIs..
 
 ## Installation
 
