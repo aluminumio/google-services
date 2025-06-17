@@ -37,10 +37,18 @@ Gem::Specification.new do |spec|
   # OAuth
   spec.add_dependency "oauth2", "~> 2.0"
   
+  # Environment variables
+  spec.add_dependency "dotenv", "~> 3.0"
+  
+  # Date/Time extensions
+  spec.add_dependency "activesupport", "~> 6.1"
+  
   # CLI
   spec.add_dependency "thor", "~> 1.3"
   spec.add_dependency "tty-prompt", "~> 0.23"
   spec.add_dependency "tty-table", "~> 0.12"
+  spec.add_dependency "launchy", "~> 2.5"
+  spec.add_dependency "webrick", "~> 1.8"
   
   # Development dependencies
   spec.add_development_dependency "rspec", "~> 3.12"

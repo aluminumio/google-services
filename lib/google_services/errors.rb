@@ -1,6 +1,8 @@
 module GoogleServices
   class Error < StandardError; end
   
+  class ConfigurationError < Error; end
+
   class AuthorizationError < Error; end
   class TokenExpiredError < AuthorizationError; end
   class MissingTokenError < AuthorizationError; end

@@ -6,3 +6,18 @@
 /pkg/
 /spec/reports/
 /tmp/
+
+# Environment and config files
+.env
+.env.*
+.google-services.yml
+config/secrets.yml
+config/credentials.yml*
+*.pem
+*.key
+
+# Google credentials
+google-credentials.json
+client_secret*.json
+service-account*.json
+tags

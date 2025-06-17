@@ -17,13 +17,20 @@ module GoogleServices
     end
 
     def oauth_client
-      @oauth_client ||= OAuth2::Client.new(
-        configuration.client_id || ENV['GOOGLE_CLIENT_ID'],
-        configuration.client_secret || ENV['GOOGLE_CLIENT_SECRET'],
-        site: 'https://accounts.google.com',
-        authorize_url: '/o/oauth2/auth',
-        token_url: '/o/oauth2/token'
-      )
+      @oauth_client ||= begin
+        client_id = configuration.client_id || ENV['GOOGLE_CLIENT_ID']
+        client_secret = configuration.client_secret || ENV['GOOGLE_CLIENT_SECRET']
+        
+        warn_if_using_env_vars(client_id, client_secret)
+        
+        OAuth2::Client.new(
+          client_id,
+          client_secret,
+          site: 'https://accounts.google.com',
+          authorize_url: '/o/oauth2/auth',
+          token_url: '/o/oauth2/token'
+        )
+      end
     end
 
     def authorize_services(*services, scopes:)
@@ -42,9 +49,12 @@ module GoogleServices
       access_token = build_access_token
       access_token = refresh_token_if_needed(access_token)
       
+      client_id = configuration.client_id || ENV['GOOGLE_CLIENT_ID']
+      client_secret = configuration.client_secret || ENV['GOOGLE_CLIENT_SECRET']
+      
       Google::Auth::UserRefreshCredentials.new(
-        client_id: configuration.client_id || ENV['GOOGLE_CLIENT_ID'],
-        client_secret: configuration.client_secret || ENV['GOOGLE_CLIENT_SECRET'],
+        client_id: client_id,
+        client_secret: client_secret,
         refresh_token: credentials[:google_refresh_token],
         access_token: access_token.token,
         expires_at: access_token.expires_at,
@@ -154,6 +164,17 @@ module GoogleServices
       
       unless missing.empty?
         raise ConfigurationError, "Credentials must include: #{missing.join(', ')}"
+      end
+    end
+    
+    def warn_if_using_env_vars(client_id, client_secret)
+      warnings = []
+      warnings << "GOOGLE_CLIENT_ID from .env file" if ENV['GOOGLE_CLIENT_ID'] && client_id == ENV['GOOGLE_CLIENT_ID']
+      warnings << "GOOGLE_CLIENT_SECRET from .env file" if ENV['GOOGLE_CLIENT_SECRET'] && client_secret == ENV['GOOGLE_CLIENT_SECRET']
+      
+      unless warnings.empty?
+        warn "\n⚠️  WARNING: Using environment variables: #{warnings.join(', ')}"
+        warn "   These should only be used for development. In production, use proper configuration.\n\n"
       end
     end
   end

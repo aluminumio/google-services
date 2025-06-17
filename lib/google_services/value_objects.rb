@@ -104,4 +104,25 @@ module GoogleServices
       nil
     end
   end
+
+  class Folder
+    attr_reader :id, :name, :created_at, :modified_at, :parent_ids
+
+    def initialize(id:, name:, created_at: nil, modified_at: nil, parent_ids: [])
+      @id = id
+      @name = name
+      @created_at = created_at
+      @modified_at = modified_at
+      @parent_ids = parent_ids
+    end
+
+    def url
+      "https://drive.google.com/drive/folders/#{id}"
+    end
+
+    def ==(other)
+      return false unless other.is_a?(Folder)
+      id == other.id
+    end
+  end
 end 

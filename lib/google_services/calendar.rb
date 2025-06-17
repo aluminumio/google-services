@@ -1,4 +1,7 @@
 require 'google/apis/calendar_v3'
+require 'active_support/core_ext/date'
+require 'active_support/core_ext/time'
+require 'active_support/core_ext/numeric/time'
 
 module GoogleServices
   class Calendar < Base

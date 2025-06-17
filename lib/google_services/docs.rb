@@ -129,6 +129,132 @@ module GoogleServices
       end
     end
 
+    # Folder operations
+    def list_folders(parent_folder: nil, limit: 100)
+      with_error_handling do
+        authorize_services(@docs_service, @drive_service, scopes: API_SCOPES)
+        
+        query_parts = ["mimeType='application/vnd.google-apps.folder'", "trashed=false"]
+        
+        if parent_folder
+          parent_id = find_folder(parent_folder)
+          query_parts << "'#{parent_id}' in parents" if parent_id
+        end
+        
+        response = @drive_service.list_files(
+          q: query_parts.join(' and '),
+          fields: 'files(id,name,createdTime,modifiedTime,parents)',
+          page_size: limit,
+          order_by: 'name'
+        )
+        
+        response.files.map do |file|
+          Folder.new(
+            id: file.id,
+            name: file.name,
+            created_at: file.created_time,
+            modified_at: file.modified_time,
+            parent_ids: file.parents || []
+          )
+        end
+      end
+    end
+
+    def list_folder_contents(folder_name, limit: 100)
+      with_error_handling do
+        authorize_services(@docs_service, @drive_service, scopes: API_SCOPES)
+        
+        folder_id = find_folder(folder_name)
+        raise NotFoundError, "Folder '#{folder_name}' not found" unless folder_id
+        
+        query = "'#{folder_id}' in parents and trashed=false"
+        
+        response = @drive_service.list_files(
+          q: query,
+          fields: 'files(id,name,mimeType,webViewLink,createdTime,modifiedTime)',
+          page_size: limit,
+          order_by: 'folder,name'
+        )
+        
+        response.files.map do |file|
+          if file.mime_type == 'application/vnd.google-apps.folder'
+            Folder.new(
+              id: file.id,
+              name: file.name,
+              created_at: file.created_time,
+              modified_at: file.modified_time,
+              parent_ids: [folder_id]
+            )
+          else
+            Document.new(
+              id: file.id,
+              title: file.name,
+              url: file.web_view_link,
+              created_at: file.created_time,
+              modified_at: file.modified_time
+            )
+          end
+        end
+      end
+    end
+
+    def create_folder(folder_name, parent_folder: nil)
+      with_error_handling do
+        authorize_services(@docs_service, @drive_service, scopes: API_SCOPES)
+        
+        # Check if folder already exists
+        existing_id = find_folder(folder_name)
+        if existing_id
+          raise ApiError, "Folder '#{folder_name}' already exists"
+        end
+        
+        folder_metadata = {
+          name: folder_name,
+          mime_type: 'application/vnd.google-apps.folder'
+        }
+        
+        if parent_folder
+          parent_id = find_folder(parent_folder)
+          raise NotFoundError, "Parent folder '#{parent_folder}' not found" unless parent_id
+          folder_metadata[:parents] = [parent_id]
+        end
+        
+        folder = Google::Apis::DriveV3::File.new(folder_metadata)
+        created_folder = @drive_service.create_file(
+          folder, 
+          fields: 'id,name,createdTime,modifiedTime,parents'
+        )
+        
+        Folder.new(
+          id: created_folder.id,
+          name: created_folder.name,
+          created_at: created_folder.created_time,
+          modified_at: created_folder.modified_time,
+          parent_ids: created_folder.parents || []
+        )
+      end
+    end
+
+    def delete_folder(folder_name, force: false)
+      with_error_handling do
+        authorize_services(@docs_service, @drive_service, scopes: API_SCOPES)
+        
+        folder_id = find_folder(folder_name)
+        raise NotFoundError, "Folder '#{folder_name}' not found" unless folder_id
+        
+        # Check if folder has contents
+        unless force
+          contents = list_folder_contents(folder_name, limit: 1)
+          unless contents.empty?
+            raise ApiError, "Folder '#{folder_name}' is not empty. Use force: true to delete anyway."
+          end
+        end
+        
+        @drive_service.delete_file(folder_id)
+        true
+      end
+    end
+
     private
 
     def build_content_requests(content)

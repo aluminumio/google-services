@@ -27,6 +27,25 @@ GoogleServices.configure do |config|
 end
 ```
 
+### Using .env Files
+
+For development, you can use a `.env` file to store your Google credentials:
+
+1. Copy `.env.example` to `.env`:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Add your Google OAuth credentials to `.env`:
+   ```
+   GOOGLE_CLIENT_ID=your_actual_client_id
+   GOOGLE_CLIENT_SECRET=your_actual_client_secret
+   ```
+
+3. The gem will automatically load these environment variables and display a warning when they're being used.
+
+**⚠️ WARNING:** Never commit your `.env` file to version control! It's already included in `.gitignore`.
+
 ## Usage
 
 ### Credentials
@@ -96,6 +115,14 @@ documents = docs.list(folder: "Work")
 
 # Delete a document
 docs.delete("document_id")
+
+# Folders
+folders = docs.list_folders
+contents = docs.list_folder_contents("Work Documents")
+folder = docs.create_folder("New Project")
+folder = docs.create_folder("Subproject", parent_folder: "Projects")
+docs.delete_folder("Old Project")
+docs.delete_folder("Old Project", force: true)
 ```
 
 ### Meet
@@ -112,21 +139,66 @@ meeting = meet.create_space(access_type: 'OPEN')
 
 ## CLI
 
-```bash
-# Configure credentials
-google-services login
+The CLI tool provides a convenient way to interact with Google services from the command line.
 
+### Authentication
+
+Before using any commands, you must authenticate with Google:
+
+```bash
+# Authenticate with Google OAuth
+google-services login
+```
+
+This will:
+1. Prompt for your Google Client ID and Secret (or use them from `.env`)
+2. Open a browser for Google OAuth authentication
+3. Save your access and refresh tokens for future use
+
+**Important:** Make sure to add `http://localhost:3000/users/auth/google_oauth2/callback` to your OAuth 2.0 redirect URIs in the Google Cloud Console.
+
+### Commands
+
+```bash
 # Calendar commands
-google-services calendar list
+google-services calendar list                          # List today's events
+google-services calendar list --date 2024-01-20       # List events for specific date
 google-services calendar create "Meeting" --time 14:00 --duration 60
+google-services calendar create "Meeting" --time 14:00 -y  # Skip confirmation with -y or --yes
 
 # Docs commands
-google-services docs list
-google-services docs create "New Document"
+google-services docs list                              # List all documents
+google-services docs list --folder "Work"              # List documents in folder
+google-services docs create "New Document" --content "Initial content"
+google-services docs create "Report" --folder "Work"   # Create in specific folder
+
+# Folder commands
+google-services docs folders                           # List all folders
+google-services docs folders --parent "Projects"       # List folders in parent
+google-services docs folder "Work Documents"           # List folder contents
+google-services docs create-folder "New Project"       # Create a folder
+google-services docs create-folder "v2" --parent "Projects"  # Create in parent
+google-services docs delete-folder "Old Project"       # Delete empty folder
+google-services docs delete-folder "Old Project" -f    # Force delete with contents
 
 # Meet commands
-google-services meet create "Quick Call"
+google-services meet create "Quick Call" --duration 30 # Create a meeting
 ```
+
+### Non-Interactive Mode
+
+For automation and scripts, use the `-y` or `--yes` flag to skip confirmation prompts:
+
+```bash
+google-services calendar create "Daily Standup" --time 09:00 --duration 15 -y
+```
+
+### Troubleshooting
+
+If you encounter authentication errors:
+- Ensure your OAuth credentials are valid
+- Check that `http://localhost:3000/users/auth/google_oauth2/callback` is in your redirect URIs
+- Run `google-services login` again to refresh your authentication
 
 ## Error Handling
 
