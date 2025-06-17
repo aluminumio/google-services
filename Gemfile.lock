@@ -2,7 +2,7 @@ PATH
   remote: .
   specs:
     google-services (0.2.0)
-      activesupport (~> 6.1)
+      activesupport (>= 6.1)
       dotenv (~> 3.0)
       google-apis-calendar_v3 (~> 0.45)
       google-apis-docs_v1 (~> 0.33)
