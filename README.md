@@ -235,4 +235,4 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/usiegj00/google-services.
+Bug reports and pull requests are welcome on GitHub at https://github.com/aluminumio/google-services.

@@ -10,11 +10,11 @@ Gem::Specification.new do |spec|
 
   spec.summary = "Simple Ruby interface for Google Calendar, Docs, and Meet APIs"
   spec.description = "A clean, simple API for integrating Google services into Ruby applications"
-  spec.homepage = "https://github.com/usiegj00/google-services"
+  spec.homepage = "https://github.com/aluminumio/google-services"
   spec.required_ruby_version = ">= 3.2.0"
 
   spec.metadata["homepage_uri"] = spec.homepage
-  spec.metadata["source_code_uri"] = "https://github.com/usiegj00/google-services"
+  spec.metadata["source_code_uri"] = "https://github.com/aluminumio/google-services"
 
   # Specify which files should be added to the gem when it is released.
   spec.files = Dir.chdir(__dir__) do
