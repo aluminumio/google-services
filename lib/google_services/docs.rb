@@ -208,18 +208,16 @@ module GoogleServices
           raise ApiError, "Folder '#{folder_name}' already exists"
         end
         
-        folder_metadata = {
-          name: folder_name,
-          mime_type: 'application/vnd.google-apps.folder'
-        }
+        folder = Google::Apis::DriveV3::File.new
+        folder.name = folder_name
+        folder.mime_type = 'application/vnd.google-apps.folder'
         
         if parent_folder
           parent_id = find_folder(parent_folder)
           raise NotFoundError, "Parent folder '#{parent_folder}' not found" unless parent_id
-          folder_metadata[:parents] = [parent_id]
+          folder.parents = [parent_id]
         end
         
-        folder = Google::Apis::DriveV3::File.new(folder_metadata)
         created_folder = @drive_service.create_file(
           folder, 
           fields: 'id,name,createdTime,modifiedTime,parents'
@@ -271,10 +269,10 @@ module GoogleServices
       return existing_id if existing_id
       
       # Create new folder
-      folder = Google::Apis::DriveV3::File.new(
-        name: folder_name,
-        mime_type: 'application/vnd.google-apps.folder'
-      )
+      folder = Google::Apis::DriveV3::File.new
+      folder.name = folder_name
+      folder.mime_type = 'application/vnd.google-apps.folder'
+      
       created_folder = @drive_service.create_file(folder, fields: 'id')
       created_folder.id
     end
