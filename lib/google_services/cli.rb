@@ -100,6 +100,28 @@ module GoogleServices
       end
     end
 
+    desc "timezone", "Get the calendar's timezone"
+    def timezone
+      config = parent_command.ensure_auth
+      user = parent_command.get_authenticated_user(config)
+      
+      GoogleServices.configure do |c|
+        c.client_id = config['client_id']
+        c.client_secret = config['client_secret']
+      end
+      
+      begin
+        calendar = GoogleServices.calendar(user)
+        timezone = calendar.timezone
+        say "\n📍 Calendar Timezone: #{timezone}", :green
+      rescue => e
+        say "\n❌ Failed to get timezone: #{e.message}", :red
+        if e.message.include?('401') || e.message.include?('expired')
+          say "Your authentication may have expired. Please run 'google-services login' again.", :yellow
+        end
+      end
+    end
+
     private
 
     def parent_command

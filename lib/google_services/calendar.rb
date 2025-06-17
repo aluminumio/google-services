@@ -155,5 +155,13 @@ module GoogleServices
         true
       end
     end
+
+    def timezone
+      with_error_handling do
+        @service.authorization = user_credentials(scopes: API_SCOPES)
+        calendar = @service.get_calendar(@calendar_id)
+        calendar.time_zone
+      end
+    end
   end
 end 

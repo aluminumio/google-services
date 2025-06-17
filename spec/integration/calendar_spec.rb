@@ -124,4 +124,14 @@ RSpec.describe GoogleServices::Calendar, :integration do
       }.to raise_error(GoogleServices::NotFoundError)
     end
   end
+
+  describe "#timezone" do
+    it "returns the calendar timezone" do
+      timezone = calendar.timezone
+      expect(timezone).to be_a(String)
+      expect(timezone).not_to be_empty
+      # Timezone should be in format like 'America/New_York' or 'UTC'
+      expect(timezone).to match(/^[A-Za-z_\/]+$/)
+    end
+  end
 end 

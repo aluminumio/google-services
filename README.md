@@ -95,6 +95,10 @@ calendar.delete_event("event_id")
 
 # Use a specific calendar
 family_calendar = GoogleServices.calendar(credentials, calendar_id: "family@gmail.com")
+
+# Get the calendar's timezone
+timezone = calendar.timezone
+puts timezone  # => "America/New_York"
 ```
 
 ### Docs
@@ -165,6 +169,7 @@ google-services calendar list                          # List today's events
 google-services calendar list --date 2024-01-20       # List events for specific date
 google-services calendar create "Meeting" --time 14:00 --duration 60
 google-services calendar create "Meeting" --time 14:00 -y  # Skip confirmation with -y or --yes
+google-services calendar timezone                      # Get the calendar's timezone
 
 # Docs commands
 google-services docs list                              # List all documents
